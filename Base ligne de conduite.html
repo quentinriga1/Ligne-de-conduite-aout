@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Ligne de conduite - Dashboard Vendeur</title>
+<style>
+  :root{
+    --bg:#0f172a; --bg-secondary:#1e293b; --card:#334155; --card-light:#475569;
+    --text:#f8fafc; --text-muted:#94a3b8; --accent:#3b82f6;
+    --success:#10b981; --warn:#f59e0b; --danger:#ef4444;
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{background:linear-gradient(135deg,var(--bg),var(--bg-secondary));color:var(--text);margin:0;padding:14px;font-size:13px}
+  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+  label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--text-muted);font-weight:600}
+  input,select{background:var(--bg-secondary);border:2px solid var(--card-light);border-radius:8px;color:var(--text);padding:5px 8px;font-size:12px}
+  .btn{background:var(--accent);border:none;color:var(--text);padding:6px 10px;border-radius:8px;font-weight:700;cursor:pointer;font-size:12px}
+  .card{background:var(--card);padding:10px;border-radius:12px;margin-bottom:8px;border:1px solid rgba(255,255,255,.08)}
+  .section-title{font-weight:900;font-size:15px;margin-bottom:6px;display:flex;gap:8px;align-items:center}
+  .block-title{font-weight:900; font-size:14px; margin:4px 0 6px 0; display:flex; align-items:center; gap:8px; color:#e2e8f0}
+  .block-title .tag{font-size:10px; padding:2px 6px; border-radius:999px; border:1px solid var(--card-light); color:var(--text-muted)}
+
+  .progress-head{
+    display:grid;
+    grid-template-columns: 1.8fr .7fr .7fr .95fr .95fr .7fr 32px;
+    gap:5px; align-items:center; margin:2px 0 6px 0; 
+    color:var(--text-muted); font-size: clamp(12px, 1.6vw, 16px);
+    text-transform:uppercase; padding:0 4px;
+  }
+  .progress-head div{font-weight:900; letter-spacing:.5px; text-align:center;}
+  .progress-head div:first-child{text-align:left;}
+  .progress-head .rescol{color:#e2e8ff} /* Résultats mis en avant */
+
+  .progress-item{
+    display:grid;
+    grid-template-columns: 1.8fr .7fr .7fr .95fr .95fr .7fr 32px;
+    gap:5px;align-items:center;background:var(--bg-secondary);
+    border:1px solid var(--card-light);padding:4px;border-radius:8px;margin-bottom:5px;
+    min-height:34px;
+  }
+  .progress-title{display:flex;align-items:center;gap:8px;line-height:1.02}
+  .cat-label{font-weight:900; font-size: clamp(18px, 2.6vw, 30px);}
+  .cat-icon{width:22px;height:22px;border-radius:999px;display:grid;place-items:center;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.35);font-size:14px;flex:0 0 22px}
+  .badge{font-size:9px;padding:1px 5px;border-radius:6px;border:1px solid var(--card-light);color:var(--text-muted);display:inline-block;margin-top:1px}
+  .badge.points{border-color:rgba(16,185,129,.6)} .badge.volume{border-color:rgba(59,130,246,.6)}
+
+  /* NUMÉRIQUES */
+  .chip{background:var(--card);border:1px solid var(--card-light);border-radius:6px;padding:2px 4px;text-align:center;font-weight:900;min-width:0;
+        font-size: clamp(14px, 2vw, 22px); line-height:1.08}
+  .chip.center{text-align:center}
+  .chip.ok{background:rgba(16,185,129,.15); border-color: var(--success); color:#d1fae5;}
+  .chip.readonly{user-select:none; pointer-events:none; opacity:0.98}
+
+  /* Résultats très visibles */
+  .result-cell{position:relative}
+  .result-input{width:100%;text-align:center;font-weight:900;padding:2px 4px;border-radius:8px;
+               border:2px solid var(--accent);
+               background:linear-gradient(180deg, rgba(59,130,246,.12), rgba(59,130,246,.02));
+               box-shadow:0 0 0 2px rgba(59,130,246,.15) inset, 0 0 12px rgba(59,130,246,.25);
+               font-size: clamp(15px, 2.2vw, 22px); line-height:1.08}
+  .result-input:focus{outline:none; box-shadow:0 0 0 3px rgba(59,130,246,.35) inset, 0 0 0 3px rgba(59,130,246,.25)}
+  .edit-hint{position:absolute; top:-10px; right:6px; font-size:10px; color:#cbd5e1; background:rgba(59,130,246,.25); padding:1px 6px; border-radius:999px; border:1px solid rgba(59,130,246,.5)}
+
+  .p-col-bar{height:30px;width:9px;background:var(--card);border-radius:6px;position:relative;overflow:hidden;justify-self:end}
+  .p-col-bar .fill{position:absolute;bottom:0;left:0;right:0;height:0;border-radius:6px;background:linear-gradient(180deg,var(--success),#34d399)}
+  .p-col-bar.warn .fill{background:linear-gradient(180deg,var(--warn),#fbbf24)}
+  .p-col-bar.danger .fill{background:linear-gradient(180deg,var(--danger),#f87171)}
+
+  .delta{font-weight:900; font-size: clamp(14px, 2vw, 22px);}
+
+  .admin-btn{position:fixed;right:12px;bottom:74px;width:42px;height:42px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:18px;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.35); z-index:2}
+
+  /* Admin modal */
+  .admin[hidden]{display:none !important;}
+  .admin{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);z-index:9999}
+  .admin .panel{max-width:880px;margin:6vh auto;background:var(--card);border:1px solid var(--card-light);padding:16px;border-radius:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  table{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:12px}
+  th,td{padding:6px 8px;background:var(--bg-secondary);border:1px solid var(--card-light)}
+  th{background:#263244;text-align:left}
+
+  /* Footer bar */
+  .footer{position:sticky; bottom:0; background:rgba(30,41,59,.95); border:1px solid var(--card-light);
+          padding:8px 10px; border-radius:10px; display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .footer-left{display:flex;align-items:center;gap:12px}
+  .days{font-weight:900; font-size:14px; color:#e2e8f0}
+  .btn.icon{display:inline-flex;align-items:center;gap:6px}
+  .btn.icon .i{font-size:16px}
+
+  @media (max-width:980px){
+    .progress-head{display:none}
+    .progress-item{grid-template-columns:1fr 1fr 1fr 1fr;grid-auto-rows:auto}
+    .p-col-bar{grid-column:1 / -1;justify-self:stretch;height:8px}
+    .p-col-bar .fill{height:100%}
+    .cat-label{font-size: clamp(18px, 4.4vw, 32px);}
+    .chip, .result-input, .delta{font-size: clamp(14px, 4vw, 24px);}
+    .admin-btn{bottom:82px}
+    .footer{flex-direction:column; align-items:stretch}
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎯 Dashboard Vendeur <span id="titleSeller" style="opacity:.9"></span></h1>
+    <div class="controls">
+      <label>Trimestre
+        <select id="quarterSelect"></select>
+      </label>
+      <label>Vendeur
+        <input id="sellerName" placeholder="Nom du vendeur" />
+      </label>
+      <button class="btn" id="loadBtn">Charger</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📊 Objectifs & suivi</div>
+
+    <div class="block">
+      <div class="block-title">🏆 Objectifs <b>Points</b> <span class="tag">classement auto</span></div>
+      <div id="pointsHead" class="progress-head"></div>
+      <div id="pointsContainer"></div>
+    </div>
+
+    <div class="block" style="margin-top:12px">
+      <div class="block-title">📦 Objectifs <b>Volume</b> <span class="tag">classement auto</span></div>
+      <div id="volumeHead" class="progress-head"></div>
+      <div id="volumeContainer"></div>
+    </div>
+  </div>
+
+  <button class="admin-btn" id="adminBtn" title="Réglages">⚙️</button>
+
+  <div class="footer">
+    <div class="footer-left">
+      <div class="days">Jours restants ce trimestre : <span id="daysRemain">0</span></div>
+      <span style="font-size:12px;color:var(--text-muted)">Les <b>Résultats</b> sont la seule zone à remplir manuellement.</span>
+    </div>
+    <div class="footer-right" style="display:flex; gap:8px">
+      <button class="btn icon" id="saveJsonBtn" title="Exporter JSON"><span class="i">💾</span> Sauvegarder</button>
+      <button class="btn icon" id="shotBtn" title="Capture de la page"><span class="i">📸</span> Print screen</button>
+    </div>
+  </div>
+
+  <!-- Admin modal (hidden by default) -->
+  <div class="admin" id="admin" hidden aria-hidden="true">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">⚙️ Réglages</h3>
+        <button class="btn" id="closeAdmin">Fermer</button>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <h4>🎯 Targets du trimestre sélectionné</h4>
+          <div id="targetsEditor"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" id="saveTargets">Sauvegarder targets</button>
+            <button class="btn" id="defaultsBtn">Charger défauts</button>
+          </div>
+        </div>
+        <div>
+          <h4>📚 Catégories</h4>
+          <div id="categoriesEditor"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" id="addCategory">Ajouter catégorie</button>
+            <button class="btn" id="saveCategories">Sauvegarder catégories</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+  const DEFAULT_CATEGORIES = [
+    {key:'internet', label:'Internet', icon:'🌐', type:'points'},
+    {key:'tv', label:'TV', icon:'📺', type:'points'},
+    {key:'voice', label:'Voice', icon:'📞', type:'points'},
+    {key:'postpaid', label:'Postpaid & Full control', icon:'📱', type:'points'},
+    {key:'accessoires', label:'Accessoires', icon:'🎧', type:'points'},
+    {key:'stimulation', label:'Stimulation', icon:'⚡', type:'points'},
+    {key:'retention', label:'Rétention', icon:'🛡️', type:'points'},
+    {key:'vol_fiber', label:'FIBER migration', icon:'🔥', type:'volume'},
+    {key:'vol_scarlet', label:'Scarlet', icon:'🔴', type:'volume'},
+    {key:'total_points', label:'Total Points', icon:'🎯', type:'points'},
+  ];
+  const DEFAULT_TARGETS = {internet:475, tv:227, voice:55, postpaid:922, accessoires:891, stimulation:180, retention:451, vol_fiber:23, vol_scarlet:7, total_points:3774};
+  const QUARTERS = ['Q1-2025','Q2-2025','Q3-2025','Q4-2025','Q1-2026'];
+  const $ = id => document.getElementById(id);
+  const STORAGE = { cats:'ldc_categories', targets:q=>`ldc_targets_${q}`, results:(q,s)=>`ldc_results_${q}_${s}` };
+
+  const getCats = () => JSON.parse(localStorage.getItem(STORAGE.cats) || 'null') || DEFAULT_CATEGORIES;
+  const saveCats = cats => localStorage.setItem(STORAGE.cats, JSON.stringify(cats));
+  const loadTargets = q => JSON.parse(localStorage.getItem(STORAGE.targets(q)) || 'null') || DEFAULT_TARGETS;
+  const saveTargets = (q, data) => localStorage.setItem(STORAGE.targets(q), JSON.stringify(data));
+  const loadResults = (q, s) => JSON.parse(localStorage.getItem(STORAGE.results(q,s)) || 'null') || {};
+  const saveResults = (q, s, data) => localStorage.setItem(STORAGE.results(q,s), JSON.stringify(data));
+
+  function quarterBounds(quarter){
+    const [q,year] = quarter.split('-'); const y = +year;
+    const start = {Q1:new Date(y,0,1),Q2:new Date(y,3,1),Q3:new Date(y,6,1),Q4:new Date(y,9,1)}[q] || new Date();
+    const end   = {Q1:new Date(y,2,31),Q2:new Date(y,5,30),Q3:new Date(y,8,30),Q4:new Date(y,11,31)}[q] || new Date();
+    return {start,end};
+  }
+  function rtFraction(quarter){
+    const {start,end} = quarterBounds(quarter);
+    const today = new Date();
+    const total = Math.ceil((end - start)/(1000*60*60*24)) + 1;
+    const elaps = today < start ? 0 : Math.min(total, Math.ceil((today - start)/(1000*60*60*24)) + 1);
+    return Math.max(0, Math.min(1, elaps/total));
+  }
+  function daysRemaining(quarter){
+    const {end} = quarterBounds(quarter);
+    const diff = Math.ceil((end - new Date())/(1000*60*60*24));
+    return Math.max(0, diff);
+  }
+  function pct(n){ return Math.max(0, Math.min(100, Math.round(n))); }
+
+  function updateTitleSeller(){
+    const s = ($('sellerName').value || '').trim();
+    $('titleSeller').textContent = s ? `– ${s}` : '';
+  }
+
+  function headHTML(){
+    return `
+      <div>Catégorie</div>
+      <div class="rescol">Résultats <span class="tag" style="margin-left:6px">✏️ à compléter</span></div>
+      <div>Target</div>
+      <div>Target real time</div>
+      <div>Retard / Avance</div>
+      <div>To-Do</div>
+      <div class="spacer">%</div>
+    `;
+  }
+
+  function buildRows(cats, containerEl, frac, targets, results){
+    containerEl.innerHTML = '';
+    cats.forEach(cat => {
+      const target   = +((targets[cat.key] ?? 0));
+      const result   = +((results[cat.key] ?? 0));
+      const rtTarget = Math.round(target * frac);
+      const delta    = result - rtTarget;
+      const todo     = Math.max(0, target - result);
+      const progFinal = target ? (result/target)*100 : (result>0?100:0);
+
+      const row = document.createElement('div');
+      row.className = 'progress-item';
+      row.dataset.key = cat.key;
+      row.dataset.target = String(target);
+      row.dataset.rttarget = String(rtTarget);
+
+      const rtOkClass = result >= rtTarget ? 'ok' : '';
+
+      row.innerHTML = `
+        <div class="progress-title">
+          <div class="cat-icon">${cat.icon || '•'}</div>
+          <div>
+            <div class="cat-label">${cat.label}</div>
+            <div class="badge ${cat.type}">${cat.type === 'points' ? 'Points' : 'Volume'}</div>
+          </div>
+        </div>
+        <div class="result-cell">
+          <input aria-label="Résultats ${cat.label}" type="number" class="result-input" id="result_${cat.key}" value="${result}" step="0.1" />
+          <span class="edit-hint">✏️</span>
+        </div>
+        <div class="chip readonly" data-chip="target" title="Modifiable via ⚙️ Réglages">${target}</div>
+        <div class="chip readonly ${rtOkClass}" data-chip="rt" title="Calculé — modifiable via ⚙️ Réglages (target)">${rtTarget}</div>
+        <div class="chip center readonly" data-chip="delta" title="Calcul automatique"><span class="delta ${delta>0?'positive':(delta<0?'negative':'zero')}">${delta>0?'+':''}${Math.round(delta)}</span></div>
+        <div class="chip readonly" data-chip="todo" title="Calcul automatique">${todo}</div>
+        <div class="p-col-bar ${progFinal>=100?'':'danger'} ${progFinal>=80 && progFinal<100 ? 'warn':''}" data-bar>
+          <div class="fill" style="height:${Math.max(4, pct(progFinal))}%"></div>
+        </div>
+      `;
+      containerEl.appendChild(row);
+    });
+  }
+
+  function render(){
+    const quarter = $('quarterSelect').value;
+    const seller = ($('sellerName').value || 'unknown').trim();
+    const catsAll = getCats();
+    const targets = loadTargets(quarter);
+    const results = loadResults(quarter, seller);
+    const frac = rtFraction(quarter);
+
+    // split: points & volume; total_points forcé en dernier
+    const pointsCats = catsAll.filter(c=>c.type==='points' && c.key!=='total_points')
+                              .concat(catsAll.filter(c=>c.key==='total_points'));
+    const volumeCats = catsAll.filter(c=>c.type==='volume');
+
+    $('pointsHead').innerHTML = headHTML();
+    $('volumeHead').innerHTML = headHTML();
+
+    buildRows(pointsCats, $('pointsContainer'), frac, targets, results);
+    buildRows(volumeCats, $('volumeContainer'), frac, targets, results);
+
+    $('daysRemain').textContent = daysRemaining(quarter);
+    updateTitleSeller();
+  }
+
+  function onResultChange(e){
+    const t = e.target;
+    if(!t.id) return;
+
+    if(t.id === 'sellerName'){
+      updateTitleSeller();
+      return;
+    }
+
+    if(!t.id.startsWith('result_')) return;
+    const key = t.id.replace('result_','');
+    const quarter = $('quarterSelect').value;
+    const seller = ($('sellerName').value || 'unknown').trim();
+    const results = loadResults(quarter, seller);
+    const value = +t.value || 0;
+    results[key] = value;
+    saveResults(quarter, seller, results);
+
+    const row = t.closest('.progress-item');
+    const target = +row.dataset.target || 0;
+    const rtTarget = +row.dataset.rttarget || 0;
+
+    const deltaVal = value - rtTarget;
+    const deltaSpan = row.querySelector('[data-chip="delta"] .delta');
+    deltaSpan.textContent = `${deltaVal>0?'+':''}${Math.round(deltaVal)}`;
+    deltaSpan.className = 'delta ' + (deltaVal>0?'positive':(deltaVal<0?'negative':'zero'));
+    row.querySelector('[data-chip="todo"]').textContent = Math.max(0, target - value);
+
+    const rtChip = row.querySelector('[data-chip="rt"]');
+    if(value >= rtTarget) rtChip.classList.add('ok'); else rtChip.classList.remove('ok');
+
+    const progFinal = target ? (value/target)*100 : (value>0?100:0);
+    const bar = row.querySelector('[data-bar]');
+    const fill = row.querySelector('[data-bar] .fill');
+    fill.style.height = `${Math.max(4, Math.max(0, Math.min(100, Math.round(progFinal))))}%`;
+    bar.classList.remove('warn','danger');
+    if(progFinal < 80) bar.classList.add('danger');
+    else if(progFinal < 100) bar.classList.add('warn');
+  }
+
+  function exportJSON(){
+    const quarter = $('quarterSelect').value;
+    const seller = ($('sellerName').value || 'unknown').trim();
+    const date = new Date().toISOString().split('T')[0];
+
+    const data = {
+      vendeur: seller,
+      trimestre: quarter,
+      date_export: date,
+      targets: loadTargets(quarter),
+      results: loadResults(quarter, seller)
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${seller || 'vendeur'}_${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function shotPage(){
+    try{
+      if(typeof html2canvas !== 'undefined'){
+        const canvas = await html2canvas(document.body, {useCORS:true, scale:2, windowWidth:document.documentElement.scrollWidth, windowHeight:document.documentElement.scrollHeight});
+        const link = document.createElement('a');
+        link.download = `screenshot_${new Date().toISOString().slice(0,10)}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } else {
+        window.print();
+      }
+    }catch(e){
+      window.print();
+    }
+  }
+
+  function renderTargetsEditor(){
+    const holder = document.getElementById('targetsEditor');
+    const quarter = $('quarterSelect').value;
+    const cats = getCats(); const targets = loadTargets(quarter);
+    holder.innerHTML = '';
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead><tr><th>Catégorie</th><th>Target</th></tr></thead>
+      <tbody>${cats.map(c=>`
+        <tr>
+          <td>${c.icon||''} ${c.label} <span class="badge ${c.type}">${c.type}</span></td>
+          <td><input type="number" step="0.1" data-tkey="${c.key}" value="${targets[c.key]??0}" style="width:100%;text-align:right"></td>
+        </tr>`).join('')}</tbody>`;
+    holder.appendChild(table);
+  }
+  function renderCategoriesEditor(){
+    const holder = document.getElementById('categoriesEditor');
+    const cats = getCats();
+    holder.innerHTML = '';
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead><tr><th>Clé</th><th>Label</th><th>Icône</th><th>Type</th><th></th></tr></thead>
+      <tbody>${cats.map((c)=>`
+        <tr>
+          <td>${c.key}</td>
+          <td><input value="${c.label}" data-ckey="${c.key}" style="width:100%"></td>
+          <td><input value="${c.icon||''}" data-cicon="${c.key}" style="width:70px;text-align:center"></td>
+          <td>
+            <select data-ctype="${c.key}">
+              <option value="points" ${c.type==='points'?'selected':''}>Points</option>
+              <option value="volume" ${c.type==='volume'?'selected':''}>Volume</option>
+            </select>
+          </td>
+          <td><button class="btn" data-remove="${c.key}">Suppr.</button></td>
+        </tr>`).join('')}</tbody>`;
+    holder.appendChild(table);
+  }
+  function slugify(s){return s.toLowerCase().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');}
+  function openAdmin(){
+    const a = document.getElementById('admin');
+    a.removeAttribute('hidden'); a.setAttribute('aria-hidden','false');
+    renderTargetsEditor(); renderCategoriesEditor();
+  }
+  function closeAdmin(){
+    const a = document.getElementById('admin');
+    a.setAttribute('hidden',''); a.setAttribute('aria-hidden','true');
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    QUARTERS.forEach(q => { const o = document.createElement('option'); o.value=q; o.textContent=q; $('quarterSelect').appendChild(o); });
+    $('quarterSelect').value = 'Q3-2025';
+    render();
+    document.addEventListener('input', onResultChange);
+    document.getElementById('loadBtn').addEventListener('click', render);
+
+    document.getElementById('adminBtn').addEventListener('click', openAdmin);
+    document.getElementById('closeAdmin').addEventListener('click', closeAdmin);
+
+    document.getElementById('saveTargets').addEventListener('click', ()=>{
+      const quarter = $('quarterSelect').value;
+      const inputs = document.querySelectorAll('#targetsEditor [data-tkey]');
+      const t = loadTargets(quarter);
+      inputs.forEach(i=> t[i.dataset.tkey] = +i.value || 0);
+      saveTargets(quarter, t);
+      render();
+    });
+    document.getElementById('defaultsBtn').addEventListener('click', ()=>{
+      saveTargets($('quarterSelect').value, {...DEFAULT_TARGETS});
+      renderTargetsEditor(); render();
+    });
+
+    document.getElementById('addCategory').addEventListener('click', ()=>{
+      const cats = getCats();
+      const key = slugify(prompt('Clé (auto si vide) :', 'new_category') || 'new_category');
+      const label = prompt('Label :', 'Nouvelle catégorie') || 'Nouvelle catégorie';
+      const icon = prompt('Icône (emoji) :', '🆕') || '🆕';
+      const type = (prompt('Type (points/volume) :', 'points')||'points').toLowerCase()==='volume'?'volume':'points';
+      if(cats.find(c=>c.key===key)) return alert('Clé déjà utilisée.');
+      cats.push({key,label,icon,type});
+      saveCats(cats);
+      renderCategoriesEditor(); renderTargetsEditor(); render();
+    });
+    document.getElementById('categoriesEditor').addEventListener('click', (e)=>{
+      const k = e.target.dataset.remove; if(!k) return;
+      let cats = getCats().filter(c=>c.key!==k);
+      saveCats(cats);
+      renderCategoriesEditor(); renderTargetsEditor(); render();
+    });
+    document.getElementById('saveCategories').addEventListener('click', ()=>{
+      let cats = getCats().map(c=>({...c}));
+      const byKey = k => cats.find(c=>c.key===k);
+      document.querySelectorAll('#categoriesEditor [data-ckey]').forEach(el => { byKey(el.dataset.ckey).label = el.value; });
+      document.querySelectorAll('#categoriesEditor [data-cicon]').forEach(el => { byKey(el.dataset.cicon).icon = el.value; });
+      document.querySelectorAll('#categoriesEditor [data-ctype]').forEach(el => { byKey(el.dataset.ctype).type = el.value; });
+      saveCats(cats);
+      renderCategoriesEditor(); render();
+    });
+
+    document.getElementById('saveJsonBtn').addEventListener('click', exportJSON);
+    document.getElementById('shotBtn').addEventListener('click', shotPage);
+
+    document.getElementById('quarterSelect').addEventListener('change', ()=>{ render(); renderTargetsEditor(); });
+  });
+</script>
+</body>
+</html>
