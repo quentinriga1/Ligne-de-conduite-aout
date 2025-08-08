@@ -61,7 +61,7 @@
                background:linear-gradient(180deg, rgba(59,130,246,.12), rgba(59,130,246,.02));
                box-shadow:0 0 0 2px rgba(59,130,246,.15) inset, 0 0 12px rgba(59,130,246,.25);
                font-size: clamp(15px, 2.2vw, 22px); line-height:1.08}
-  .result-input:focus{outline:none; box-shadow:0 0 0 3px rgba(59,130,246,.35) inset, 0 0 0 3px rgba(59,130,246,.25)}
+    .result-input.ok{border-color:var(--success);background:rgba(16,185,129,.15);color:#d1fae5;}
   .edit-hint{position:absolute; top:-10px; right:6px; font-size:10px; color:#cbd5e1; background:rgba(59,130,246,.25); padding:1px 6px; border-radius:999px; border:1px solid rgba(59,130,246,.5)}
 
   .p-col-bar{height:30px;width:9px;background:var(--card);border-radius:6px;position:relative;overflow:hidden;justify-self:end}
@@ -111,6 +111,9 @@
       </label>
       <label>Vendeur
         <input id="sellerName" placeholder="Nom du vendeur" />
+      </label>
+      <label>Date
+        <input type="date" id="dateSelect" />
       </label>
       <button class="btn" id="loadBtn">Charger</button>
     </div>
@@ -189,7 +192,7 @@
     {key:'total_points', label:'Total Points', icon:'🎯', type:'points'},
   ];
   const DEFAULT_TARGETS = {internet:475, tv:227, voice:55, postpaid:922, accessoires:891, stimulation:180, retention:451, vol_fiber:23, vol_scarlet:7, total_points:3774};
-  const QUARTERS = ['Q1-2025','Q2-2025','Q3-2025','Q4-2025','Q1-2026'];
+  const QUARTERS = ['Q1-2025','Q2-2025','Q3-2025','Q4-2025',  'Q1-2026','Q2-2026','Q3-2026','Q4-2026',  'Q1-2027','Q2-2027','Q3-2027','Q4-2027',  'Q1-2028','Q2-2028','Q3-2028','Q4-2028',  'Q1-2029','Q2-2029','Q3-2029','Q4-2029',  'Q1-2030','Q2-2030','Q3-2030','Q4-2030'];
   const $ = id => document.getElementById(id);
   const STORAGE = { cats:'ldc_categories', targets:q=>`ldc_targets_${q}`, results:(q,s)=>`ldc_results_${q}_${s}` };
 
@@ -206,17 +209,29 @@
     const end   = {Q1:new Date(y,2,31),Q2:new Date(y,5,30),Q3:new Date(y,8,30),Q4:new Date(y,11,31)}[q] || new Date();
     return {start,end};
   }
-  function rtFraction(quarter){
+  function rtFraction(quarter, date){
     const {start,end} = quarterBounds(quarter);
-    const today = new Date();
+    const ref = date || new Date();
     const total = Math.ceil((end - start)/(1000*60*60*24)) + 1;
-    const elaps = today < start ? 0 : Math.min(total, Math.ceil((today - start)/(1000*60*60*24)) + 1);
+    const elaps = ref < start ? 0 : Math.min(total, Math.ceil((ref - start)/(1000*60*60*24)) + 1);
     return Math.max(0, Math.min(1, elaps/total));
   }
-  function daysRemaining(quarter){
+  function daysRemaining(quarter, date){
     const {end} = quarterBounds(quarter);
-    const diff = Math.ceil((end - new Date())/(1000*60*60*24));
+    const ref = date || new Date();
+    const diff = Math.ceil((end - ref)/(1000*60*60*24));
     return Math.max(0, diff);
+  }
+  function updateDateBounds(){
+    const dateInput = $('dateSelect');
+    const {start,end} = quarterBounds($('quarterSelect').value);
+    dateInput.min = start.toISOString().split('T')[0];
+    dateInput.max = end.toISOString().split('T')[0];
+    if(!dateInput.value || dateInput.value < dateInput.min || dateInput.value > dateInput.max){
+      const today = new Date();
+      if(today >= start && today <= end) dateInput.value = today.toISOString().split('T')[0];
+      else dateInput.value = dateInput.min;
+    }
   }
   function pct(n){ return Math.max(0, Math.min(100, Math.round(n))); }
 
@@ -254,6 +269,7 @@
       row.dataset.rttarget = String(rtTarget);
 
       const rtOkClass = result >= rtTarget ? 'ok' : '';
+      const resOkClass = result >= target ? 'ok' : '';
 
       row.innerHTML = `
         <div class="progress-title">
@@ -264,7 +280,7 @@
           </div>
         </div>
         <div class="result-cell">
-          <input aria-label="Résultats ${cat.label}" type="number" class="result-input" id="result_${cat.key}" value="${result}" step="0.1" />
+          <input aria-label="Résultats \${cat.label}" type="number" class="result-input \${resOkClass}" id="result_\${cat.key}" value="\${result}" step="0.1" />
           <span class="edit-hint">✏️</span>
         </div>
         <div class="chip readonly" data-chip="target" title="Modifiable via ⚙️ Réglages">${target}</div>
@@ -285,7 +301,8 @@
     const catsAll = getCats();
     const targets = loadTargets(quarter);
     const results = loadResults(quarter, seller);
-    const frac = rtFraction(quarter);
+    const refDate = $('dateSelect').value ? new Date($('dateSelect').value) : new Date();
+    const frac = rtFraction(quarter, refDate);
 
     // split: points & volume; total_points forcé en dernier
     const pointsCats = catsAll.filter(c=>c.type==='points' && c.key!=='total_points')
@@ -298,7 +315,7 @@
     buildRows(pointsCats, $('pointsContainer'), frac, targets, results);
     buildRows(volumeCats, $('volumeContainer'), frac, targets, results);
 
-    $('daysRemain').textContent = daysRemaining(quarter);
+    $('daysRemain').textContent = daysRemaining(quarter, refDate);
     updateTitleSeller();
   }
 
@@ -323,6 +340,8 @@
     const row = t.closest('.progress-item');
     const target = +row.dataset.target || 0;
     const rtTarget = +row.dataset.rttarget || 0;
+
+    if(value >= target) t.classList.add('ok'); else t.classList.remove('ok');
 
     const deltaVal = value - rtTarget;
     const deltaSpan = row.querySelector('[data-chip="delta"] .delta');
@@ -431,9 +450,11 @@
   document.addEventListener('DOMContentLoaded', ()=>{
     QUARTERS.forEach(q => { const o = document.createElement('option'); o.value=q; o.textContent=q; $('quarterSelect').appendChild(o); });
     $('quarterSelect').value = 'Q3-2025';
+    updateDateBounds();
     render();
     document.addEventListener('input', onResultChange);
     document.getElementById('loadBtn').addEventListener('click', render);
+    document.getElementById('dateSelect').addEventListener('change', render);
 
     document.getElementById('adminBtn').addEventListener('click', openAdmin);
     document.getElementById('closeAdmin').addEventListener('click', closeAdmin);
@@ -481,7 +502,7 @@
     document.getElementById('saveJsonBtn').addEventListener('click', exportJSON);
     document.getElementById('shotBtn').addEventListener('click', shotPage);
 
-    document.getElementById('quarterSelect').addEventListener('change', ()=>{ render(); renderTargetsEditor(); });
+    document.getElementById('quarterSelect').addEventListener('change', ()=>{ updateDateBounds(); render(); renderTargetsEditor(); });
   });
 </script>
 </body>
